@@ -1,142 +1,194 @@
-# Sessions Frontend Client
+# Flask Notes API (Session-Based Authentication)
 
-This React application provides a complete **session-based authentication flow** (sign up, log in, check session, log out). It is designed to connect to your **Flask backend** that manages user state using **Flask sessions**.
+## Overview
 
-You will not need to modify this frontend. However, your backend must implement and support the routes described below for the client to function properly.
+This project is a **Flask-based REST API** that implements **secure session-based authentication** and a **user-owned Notes resource**.
 
----
+The backend is designed to integrate with a provided React frontend that handles user login, signup, and session persistence. Authenticated users can create, view, update, and delete their own notes, while access to other users’ data is strictly prevented.
 
-## Getting Started
-
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-2. **Start the application**
-   ```bash
-   npm start
-   ```
-
-3. **Backend requirements**
-   - Must use **Flask sessions** to store and manage authentication.
-   - Expose routes that manage login, signup, logout, and session checking.
-   - Should run on port 5555 to match proxy in package.json.
-   - Return JSON responses for all routes.
+The API also implements pagination on the notes index route to ensure scalability and performance.
 
 ---
 
-## Auth Flow Overview
+### Features
 
-This app handles user authentication and session state using the following endpoints:
-
----
-
-### POST `/login`
-
-**Description**: Authenticates an existing user and sets the session cookie.  
-**Headers**:
-```json
-{
-  "Content-Type": "application/json"
-}
-```
-
-**Body**:
-```json
-{
-  "username": "string",
-  "password": "string"
-}
-```
-
-**Response**:
-```json
-{
-  "id": 1,
-  "username": "string"
-}
-```
+- Session-based authentication
+- Secure password hashing with bcrypt
+- Protected routes requiring authentication
+- User-owned Notes resource
+- Full CRUD operations for notes
+- Paginated index route for notes
+- Database migrations using Flask-Migrate
+- Seed file for local development
+- Clean and maintainable project structure
 
 ---
 
-### POST `/signup`
+### Authentication Endpoints
 
-**Description**: Registers a new user and logs them in by setting the session.  
-**Headers**:
-```json
-{
-  "Content-Type": "application/json"
-}
-```
+#### POST `/signup`
 
-**Body**:
+Creates a new user account and starts a session.
+
+**Request Body**
 ```json
 {
   "username": "string",
   "password": "string",
   "password_confirmation": "string"
 }
-```
 
-**Response**:
-```json
+#### Response
+
 {
   "id": 1,
   "username": "string"
 }
-```
 
----
+#### POST /login
+- Authenticates an existing user and starts a session.
 
-### 🔄 GET `/check_session`
-
-**Description**: Verifies if a user session is active.  
-**Headers**: _(none required)_
-
-**Response (if logged in)**:
-```json
+#### Request Body
 {
-  "id": 1,
-  "username": "string"
+  "username": "string",
+  "password": "string"
 }
-```
 
-**Response (if not logged in)**:
-```json
-{}
-```
+#### GET /check_session
+- Checks if a user session is active.
+- Returns user data if logged in
+- Returns {} with status 401 if not authenticated
 
----
+#### DELETE /logout
+- Ends the current user session.
 
-### DELETE `/logout`
+#### Notes Resource (Protected)
+- All /notes routes require an authenticated session.
 
-**Description**: Ends the session by removing `user_id` from the session store.  
-**Headers**: _(none required)_
+#### GET /notes
+- Returns paginated notes owned by the logged-in user.
 
-**Response**:
-```json
-{}
-```
+#### Query Parameters
 
----
+- page (default: 1)
+- per_page (default: 10)
 
-## Session Management
+##### Example Response
+{
+  "page": 1,
+  "per_page": 5,
+  "total": 12,
+  "total_pages": 3,
+  "items": [
+    {
+      "id": 1,
+      "title": "Welcome",
+      "body": "This is your first note.",
+      "created_at": "2026-01-03T15:05:55",
+      "updated_at": "2026-01-03T15:05:55",
+      "user_id": 1
+    }
+  ]
+}
 
-- When a user logs in or signs up, a session is created on the server.
-- `check_session` is used on initial load to verify if a user is still logged in.
-- On logout, the session is destroyed server-side and the frontend state is cleared.
+#### POST /notes
+- Creates a new note for the logged-in user.
 
----
+#### GET /notes/<id>
+- Returns a single note owned by the logged-in user.
 
-## Custom Resource Endpoints
+#### PATCH /notes/<id>
+- Updates a note owned by the logged-in user.
 
-This frontend does **not include fetch calls** for your custom resource (e.g., `/notes`, `/entries`, `/tasks`). These will be added by the frontend team after your backend is complete.
+#### DELETE /notes/<id>
+- Deletes a note owned by the logged-in user.
 
-Ensure your resource routes:
-- Are fully protected: require login to access.
-- Use `session['user_id']` to associate and filter data per user.
-- Follow RESTful patterns: `GET`, `POST`, `PATCH`, `DELETE`.
-- Include pagination support where appropriate (e.g., `GET /notes?page=1&per_page=10`).
+### API Endpoints Summary
 
----
+#### Authentication
+- POST `/signup` — Create a new user and start a session
+- POST `/login` — Authenticate a user and start a session
+- GET `/check_session` — Check if a user is logged in
+- DELETE `/logout` — End the current user session
+
+#### Notes (Protected)
+- GET `/notes` — List the logged-in user’s notes (paginated)
+- POST `/notes` — Create a new note
+- GET `/notes/<id>` — Retrieve a single note
+- PATCH `/notes/<id>` — Update a note
+- DELETE `/notes/<id>` — Delete a note
+
+### Technologies Used
+#### Backend
+- Python 3
+
+#### Flask
+##### Flask Extensions
+- Flask-SQLAlchemy
+- Flask-Migrate
+- Flask-Bcrypt
+- Flask-CORS
+
+#### Database
+- SQLite (development)
+- PostgreSQL-compatible (production-ready)
+
+#### Tooling
+- Pipenv
+- Git & GitHub
+
+### File Structure
+All paths are relative to the repository root.
+
+- flask-c10-summative-lab-sessions-and-jwt-clients/server/app.py
+- flask-c10-summative-lab-sessions-and-jwt-clients/server/config.py
+- flask-c10-summative-lab-sessions-and-jwt-clients/server/models.py
+- flask-c10-summative-lab-sessions-and-jwt-clients/server/seed.py
+- flask-c10-summative-lab-sessions-and-jwt-clients/server/migrations/
+- flask-c10-summative-lab-sessions-and-jwt-clients/server/instance/
+- flask-c10-summative-lab-sessions-and-jwt-clients/server/Pipfile
+- flask-c10-summative-lab-sessions-and-jwt-clients/server/Pipfile.lock
+- flask-c10-summative-lab-sessions-and-jwt-clients/server/README.md
+
+### Key Files Explained
+#### server/app.py
+- Defines all API routes
+- Handles authentication and session management
+- Implements CRUD operations for notes
+- Enforces user ownership and authorization
+- Implements pagination on the notes index route
+
+#### server/models.py
+- Defines User and Note SQLAlchemy models
+- Implements password hashing and authentication logic
+- Validates required fields
+
+#### server/config.py
+- Application factory
+- Database, migrations, bcrypt, and CORS configuration
+- Environment-safe setup for development and deployment
+
+#### server/seed.py
+- Populates the database with sample users and notes
+- Safe to run multiple times during development
+
+### Running the Project
+#### Setup
+- pipenv install
+- pipenv shell
+- cd server
+#### Database Setup
+- flask db upgrade
+- python seed.py
+#### Start the Server
+- python app.py
+
+#### The server runs on: 
+- http://localhost:5555
+
+### License
+Educational use only.
+Built for learning secure Flask API design, authentication, and pagination.
+
+### ### Additional notes:
+- Project passed through ChatGPT for syntax and grammatical error checking and for writing this README.md. Everything was double checked for accuracy and readability prior to submission.
