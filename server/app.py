@@ -103,14 +103,34 @@ def get_notes():
     if not user:
         return {"errors": ["Unauthorized"]}, 401
 
-    notes = (
+    # Query params with defaults
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=10, type=int)
+
+    # Safety: keep values sane
+    if page < 1:
+        page = 1
+    if per_page < 1:
+        per_page = 10
+    if per_page > 50:
+        per_page = 50
+
+    pagination = (
         Note.query
         .filter(Note.user_id == user.id)
         .order_by(Note.created_at.desc())
-        .all()
+        .paginate(page=page, per_page=per_page, error_out=False)
     )
 
-    return [n.to_dict() for n in notes], 200
+    items = [n.to_dict() for n in pagination.items]
+
+    return {
+        "page": page,
+        "per_page": per_page,
+        "total": pagination.total,
+        "total_pages": pagination.pages,
+        "items": items,
+    }, 200
 
 
 @app.post("/notes")
