@@ -5,9 +5,9 @@ Date: 2026-01-03
 Version: 1.0
 """
 
-from sqlalchemy.orm import validates
-from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime
+
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
 
 from config import db, bcrypt
@@ -47,6 +47,7 @@ class User(db.Model):
     def to_dict(self):
         return {"id": self.id, "username": self.username}
 
+
 class Note(db.Model):
     __tablename__ = "notes"
 
@@ -65,7 +66,10 @@ class Note(db.Model):
 
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
-    user = db.relationship("User", backref=db.backref("notes", cascade="all, delete-orphan"))
+    user = db.relationship(
+        "User",
+        backref=db.backref("notes", cascade="all, delete-orphan")
+    )
 
     def to_dict(self):
         return {
@@ -76,6 +80,7 @@ class Note(db.Model):
             "updated_at": self.updated_at.isoformat(),
             "user_id": self.user_id,
         }
+
     @validates("title", "body")
     def validate_text(self, key, value):
         if not value or not str(value).strip():
