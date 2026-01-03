@@ -7,6 +7,8 @@ Version: 1.0
 
 from sqlalchemy.orm import validates
 from sqlalchemy.ext.hybrid import hybrid_property
+from datetime import datetime
+from sqlalchemy.orm import validates
 
 from config import db, bcrypt
 
@@ -44,3 +46,38 @@ class User(db.Model):
 
     def to_dict(self):
         return {"id": self.id, "username": self.username}
+
+class Note(db.Model):
+    __tablename__ = "notes"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    title = db.Column(db.String, nullable=False)
+    body = db.Column(db.Text, nullable=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    user = db.relationship("User", backref=db.backref("notes", cascade="all, delete-orphan"))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "body": self.body,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "user_id": self.user_id,
+        }
+    @validates("title", "body")
+    def validate_text(self, key, value):
+        if not value or not str(value).strip():
+            raise ValueError(f"{key.capitalize()} is required.")
+        return value.strip()
