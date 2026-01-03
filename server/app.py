@@ -11,10 +11,12 @@ from sqlalchemy.exc import IntegrityError
 from config import create_app, db
 from models import User, Note
 
+# Application factory keeps config, extensions, and app setup cleanly separated
 app = create_app()
 
 
 def current_user():
+    # Centralized session-based user lookup to avoid duplication
     user_id = session.get("user_id")
     if not user_id:
         return None
@@ -23,6 +25,7 @@ def current_user():
 
 @app.get("/")
 def home():
+    # Simple health check endpoint
     return {"status": "ok"}, 200
 
 
@@ -30,6 +33,7 @@ def home():
 def signup():
     data = request.get_json() or {}
 
+    # Normalize inputs early to avoid downstream edge cases
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
     password_confirmation = data.get("password_confirmation") or ""
@@ -47,13 +51,15 @@ def signup():
 
     try:
         user = User(username=username)
-        user.password_hash = password
+        user.password_hash = password  # Triggers model-level hashing/validation
         db.session.add(user)
         db.session.commit()
     except IntegrityError:
+        # Handles unique constraint violations cleanly
         db.session.rollback()
         return {"errors": ["Username already taken."]}, 422
     except ValueError as e:
+        # Catches model validation errors
         db.session.rollback()
         return {"errors": [str(e)]}, 422
 
@@ -70,6 +76,7 @@ def login():
 
     user = User.query.filter(User.username == username).first()
 
+    # Authentication intentionally fails silently to avoid leaking info
     if not user or not user.authenticate(password):
         return {"errors": ["Invalid username or password."]}, 401
 
@@ -79,12 +86,14 @@ def login():
 
 @app.get("/check_session")
 def check_session():
+    # Lightweight session validation for frontend bootstrapping
     user_id = session.get("user_id")
     if not user_id:
         return {}, 401
 
     user = User.query.get(user_id)
     if not user:
+        # Clean up stale session data
         session.pop("user_id", None)
         return {}, 401
 
@@ -93,6 +102,7 @@ def check_session():
 
 @app.delete("/logout")
 def logout():
+    # Stateless logout — just clear the session
     session.pop("user_id", None)
     return {}, 200
 
@@ -103,11 +113,11 @@ def get_notes():
     if not user:
         return {"errors": ["Unauthorized"]}, 401
 
-    # Query params with defaults
+    # Pagination parameters with sane defaults
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
 
-    # Safety: keep values sane
+    # Guardrails to prevent abuse or accidental overload
     if page < 1:
         page = 1
     if per_page < 1:
@@ -148,6 +158,7 @@ def create_note():
         db.session.add(note)
         db.session.commit()
     except ValueError as e:
+        # Relies on model validation for required fields / constraints
         db.session.rollback()
         return {"errors": [str(e)]}, 422
 
@@ -160,6 +171,7 @@ def get_note(note_id):
     if not user:
         return {"errors": ["Unauthorized"]}, 401
 
+    # Enforces ownership at the query level
     note = Note.query.filter(Note.id == note_id, Note.user_id == user.id).first()
     if not note:
         return {"errors": ["Not found"]}, 404
@@ -180,6 +192,7 @@ def update_note(note_id):
     data = request.get_json() or {}
 
     try:
+        # Partial updates only modify provided fields
         if "title" in data:
             note.title = data["title"]
         if "body" in data:
@@ -208,4 +221,5 @@ def delete_note(note_id):
 
 
 if __name__ == "__main__":
+    # Development-only entry point
     app.run(port=5555, debug=True)

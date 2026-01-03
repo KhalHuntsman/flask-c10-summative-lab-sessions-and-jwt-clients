@@ -68,12 +68,12 @@ Creates a new user account and starts a session.
 #### GET /notes
 - Returns paginated notes owned by the logged-in user.
 
-### Query Parameters
+#### Query Parameters
 
 - page (default: 1)
 - per_page (default: 10)
 
-#### Example Response
+##### Example Response
 {
   "page": 1,
   "per_page": 5,
@@ -102,6 +102,21 @@ Creates a new user account and starts a session.
 
 #### DELETE /notes/<id>
 - Deletes a note owned by the logged-in user.
+
+### API Endpoints Summary
+
+#### Authentication
+- POST `/signup` — Create a new user and start a session
+- POST `/login` — Authenticate a user and start a session
+- GET `/check_session` — Check if a user is logged in
+- DELETE `/logout` — End the current user session
+
+#### Notes (Protected)
+- GET `/notes` — List the logged-in user’s notes (paginated)
+- POST `/notes` — Create a new note
+- GET `/notes/<id>` — Retrieve a single note
+- PATCH `/notes/<id>` — Update a note
+- DELETE `/notes/<id>` — Delete a note
 
 ### Technologies Used
 #### Backend
